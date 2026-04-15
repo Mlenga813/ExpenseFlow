@@ -387,7 +387,7 @@ function RegisterPage({ onSwitch, onRegistered }: { onSwitch: () => void; onRegi
 
 // ==================== APP LAYOUT ====================
 function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { navigate, currentPage } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
