@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { signIn } from 'next-auth/react';
+import { toast } from 'sonner';
 import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -89,10 +90,13 @@ export default function HomePage() {
   const { currentPage, currentRequestId, navigate } = useAppStore();
   const { user, setUser, isLoading, setLoading, logout } = useAuthStore();
 
-  // Check session on mount
+  // Check session on mount + auto-seed
   useEffect(() => {
-    const checkSession = async () => {
+    const init = async () => {
       try {
+        // Auto-seed on first visit
+        await fetch('/api/seed', { method: 'POST' }).catch(() => {});
+        
         const session = await apiFetch('/api/auth/session');
         if (session?.user) {
           const u = session.user as any;
@@ -114,7 +118,7 @@ export default function HomePage() {
         setUser(null);
       }
     };
-    checkSession();
+    init();
   }, []);
 
   const pageVariants = {
@@ -214,7 +218,7 @@ function LoginPage({ onSwitch, onLogin }: { onSwitch: () => void; onLogin: (user
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
             <CircleDollarSign className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">ExpenseFlow</h1>
@@ -247,6 +251,33 @@ function LoginPage({ onSwitch, onLogin }: { onSwitch: () => void; onLogin: (user
             <div className="mt-4 text-center">
               <button onClick={onSwitch} className="text-sm text-emerald-600 hover:underline">Don&apos;t have an account? Register</button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Demo Login */}
+        <Card className="mt-4 border-0 shadow-sm bg-white/80">
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Demo Login</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Employee', email: 'employee@acme.com', color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
+                { label: 'Ops Manager', email: 'ops@acme.com', color: 'bg-amber-50 text-amber-700 hover:bg-amber-100' },
+                { label: 'Chief Accountant', email: 'accountant@acme.com', color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+                { label: 'General Manager', email: 'gm@acme.com', color: 'bg-teal-50 text-teal-700 hover:bg-teal-100' },
+                { label: 'Cashier', email: 'cashier@acme.com', color: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100' },
+                { label: 'Admin', email: 'admin@acme.com', color: 'bg-violet-50 text-violet-700 hover:bg-violet-100' },
+              ].map(demo => (
+                <button
+                  key={demo.email}
+                  type="button"
+                  className={`text-xs px-3 py-2 rounded-lg font-medium transition-colors ${demo.color}`}
+                  onClick={() => { setEmail(demo.email); setPassword('Password@123'); }}
+                >
+                  {demo.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">Super Admin: superadmin@expenseflow.com / Admin@123</p>
           </CardContent>
         </Card>
       </motion.div>
@@ -357,7 +388,7 @@ function RegisterPage({ onSwitch, onRegistered }: { onSwitch: () => void; onRegi
 // ==================== APP LAYOUT ====================
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
-  const { navigate } = useAppStore();
+  const { navigate, currentPage } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const role = user?.role as Role;
@@ -408,7 +439,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               key={item.key}
               onClick={() => { navigate(item.key); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                useAppStore.getState().currentPage === item.key
+                currentPage === item.key || (item.key === 'requests' && currentPage === 'request-detail')
                   ? 'bg-emerald-50 text-emerald-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
@@ -816,6 +847,7 @@ function NewRequestPage() {
         await fetch(`/api/requests/upload?id=${request.id}`, { method: 'POST', body: formData });
       }
 
+      toast.success('Fund requisition submitted successfully');
       navigate('request-detail', request.id);
     } catch (err: any) {
       setError(err.message);
@@ -978,9 +1010,10 @@ function RequestDetailPage() {
       });
       setComment('');
       setSignatureData(null);
+      toast.success(action === 'APPROVE' ? 'Request approved successfully' : action === 'REJECT' ? 'Request rejected' : 'Additional information requested');
       loadRequest();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Action failed');
     } finally {
       setActionLoading(false);
     }
@@ -994,9 +1027,10 @@ function RequestDetailPage() {
         method: 'POST',
         body: JSON.stringify({ disbursementReference: disbRef, disbursementNotes: disbNotes }),
       });
+      toast.success('Disbursement processed successfully');
       loadRequest();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Disbursement failed');
     } finally {
       setActionLoading(false);
     }
@@ -1046,6 +1080,8 @@ function RequestDetailPage() {
 
   const canApprove = canApproveAtStep(role, request.currentStep) && ['PENDING_OPS_MANAGER', 'PENDING_CHIEF_ACCOUNTANT', 'PENDING_GENERAL_MANAGER'].includes(request.status);
   const canDisb = canDisburse(role) && request.status === 'PENDING_DISBURSEMENT';
+  const isRequestor = user?.id === request.requestedById;
+  const canResubmit = isRequestor && (request.status === 'REJECTED' || request.status === 'INFO_REQUESTED');
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -1092,9 +1128,39 @@ function RequestDetailPage() {
 
       {/* Workflow Timeline */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Approval Workflow</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Approval Workflow</CardTitle>
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Progress</span>
+              <span className="text-xs font-medium text-emerald-600">
+                {request.status === 'DISBURSED' ? 'Complete' : request.status === 'REJECTED' ? 'Rejected' : `Step ${request.currentStep} of 4`}
+              </span>
+            </div>
+            <Progress value={
+              request.status === 'DISBURSED' ? 100 :
+              request.status === 'REJECTED' ? 0 :
+              ((request.currentStep - 1) / 4) * 100
+            } className="h-2" />
+          </div>
+        </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Submission entry */}
+            <div className="flex gap-4 pb-4 border-b">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-blue-100 text-blue-700">
+                  <Send className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-blue-700">Request Submitted</p>
+                  <span className="text-xs text-gray-500">{formatDate(request.createdAt)}</span>
+                </div>
+                <p className="text-sm text-gray-500">{request.requestedBy?.name} {request.requestedBy?.department ? `(${request.requestedBy.department.name})` : ''}</p>
+              </div>
+            </div>
             {WORKFLOW_STEPS.map((step, idx) => {
               const isCompleted = request.currentStep > step.step || request.status === 'DISBURSED';
               const isCurrent = request.currentStep === step.step && !['DISBURSED', 'REJECTED'].includes(request.status);
@@ -1170,6 +1236,41 @@ function RequestDetailPage() {
               <Button variant="outline" className="border-amber-300 text-amber-700" disabled={actionLoading} onClick={() => handleApproval('INFO_REQUESTED')}>
                 <Info className="w-4 h-4 mr-2" /> Request Info
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resubmit Panel */}
+      {canResubmit && (
+        <Card className={request.status === 'REJECTED' ? 'border-red-200 bg-red-50/30' : 'border-orange-200 bg-orange-50/30'}>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              {request.status === 'REJECTED' ? <XCircle className="w-4 h-4 text-red-500" /> : <Info className="w-4 h-4 text-orange-500" />}
+              {request.status === 'REJECTED' ? 'Request Rejected' : 'Additional Information Requested'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Additional Comments / Updated Justification</Label>
+              <Textarea placeholder="Provide additional information or update your request..." value={comment} onChange={e => setComment(e.target.value)} rows={3} />
+            </div>
+            <div className="flex gap-3">
+              <Button className="bg-emerald-600 hover:bg-emerald-700" disabled={actionLoading} onClick={async () => {
+                setActionLoading(true);
+                try {
+                  await apiFetch(`/api/requests/${currentRequestId}/approve`, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'APPROVE', comment: `Resubmitted: ${comment}` }),
+                  });
+                  setComment('');
+                  loadRequest();
+                } catch (err: any) { alert(err.message); }
+                finally { setActionLoading(false); }
+              }}>
+                <Send className="w-4 h-4 mr-2" /> Resubmit Request
+              </Button>
+              <Button variant="outline" onClick={() => navigate('requests-new')}>Create New Request Instead</Button>
             </div>
           </CardContent>
         </Card>
@@ -1415,6 +1516,7 @@ function AdminUsersPage() {
     setFormLoading(true);
     try {
       await apiFetch('/api/users', { method: 'POST', body: JSON.stringify(form) });
+      toast.success('User created successfully');
       setShowDialog(false);
       setForm({ name: '', email: '', password: '', role: 'EMPLOYEE', departmentId: '' });
       loadData();
