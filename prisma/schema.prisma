@@ -16,15 +16,16 @@ model Company {
   name        String
   industry    String?
   logo        String?
-  currency    String   @default("USD")
+  currency    String   @default("TZS")
   inviteCode  String   @unique @default(cuid())
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users       User[]
-  departments Department[]
-  requests    ExpenseRequest[]
+  users            User[]
+  departments      Department[]
+  requests         ExpenseRequest[]
+  vehicleRequests  VehicleRequest[]
 }
 
 model Department {
@@ -37,6 +38,7 @@ model Department {
   company   Company  @relation(fields: [companyId], references: [id])
   users     User[]
   requests  ExpenseRequest[]
+  vehicleRequests VehicleRequest[]
 }
 
 // ============================================
@@ -69,6 +71,11 @@ model User {
   notifications    Notification[]
   accounts         Account[]
   sessions         Session[]
+  vehicleRequests  VehicleRequest[]  @relation("VehicleRequestor")
+  vehicleOpsReviews VehicleRequest[] @relation("VehicleOpsManager")
+  vehicleAcctReviews VehicleRequest[] @relation("VehicleChiefAccountant")
+  vehicleGMReviews VehicleRequest[]  @relation("VehicleGeneralManager")
+  vehicleApprovalLogs VehicleApprovalLog[]
 }
 
 // ============================================
@@ -174,6 +181,81 @@ model Notification {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// VEHICLE REQUEST (Kibali cha Gari)
+// ============================================
+
+model VehicleRequest {
+  id                String   @id @default(cuid())
+  requestNumber     String   @unique // Auto-generated: VEH-2026-0001
+
+  // (A) Applicant Info
+  requesterName     String   // Jina la Mwombaji
+  department        String   // Idara
+  position          String   // Cheo
+  requestDate       DateTime @default(now()) // Tarehe
+
+  // (B) Trip Details
+  plateNumber       String   // Namba ya Gari
+  reason            String   // Sababu ya matumizi ya gari
+  departureTime     DateTime // Muda wa kuondoka
+  destination       String   // Mahali gari linaenda
+  boardMemberName   String?  // Mjumbe wa Bod / Mkuu wa Idara
+
+  // (C) Vehicle Condition Before
+  conditionBefore   String?  // Nzuri / Mbaya
+  driverSignatureBefore String? // Sahihi ya dereva kabla
+
+  // (D) Approval by Chairman/General Manager
+  status            String   @default("PENDING_OPS_MANAGER")
+  // PENDING_OPS_MANAGER -> PENDING_CHIEF_ACCOUNTANT -> PENDING_GENERAL_MANAGER -> APPROVED -> REJECTED
+  currentStep       Int      @default(1) // 1=OpsMgr, 2=ChiefAcct, 3=GM
+
+  companyId         String
+  requestedById     String
+  departmentId      String?
+  assignedOpsManagerId      String?
+  assignedChiefAccountantId String?
+  assignedGeneralManagerId  String?
+
+  // Approval timestamps
+  opsManagerApprovedAt      DateTime?
+  chiefAccountantApprovedAt DateTime?
+  generalManagerApprovedAt  DateTime?
+
+  // (E) Return Details
+  returnTime        DateTime? // Muda wa kurudi
+  returnDate        DateTime? // Tarehe ya kurudi
+  conditionAfter    String?  // Nzuri / Mbaya
+  driverSignatureAfter  String? // Sahihi ya dereva baada
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company           Company        @relation(fields: [companyId], references: [id])
+  requestedBy       User           @relation("VehicleRequestor", fields: [requestedById], references: [id])
+  department2       Department?    @relation(fields: [departmentId], references: [id])
+  opsManager        User?          @relation("VehicleOpsManager", fields: [assignedOpsManagerId], references: [id])
+  chiefAccountant   User?          @relation("VehicleChiefAccountant", fields: [assignedChiefAccountantId], references: [id])
+  generalManager    User?          @relation("VehicleGeneralManager", fields: [assignedGeneralManagerId], references: [id])
+
+  approvalLogs      VehicleApprovalLog[]
+}
+
+model VehicleApprovalLog {
+  id                 String   @id @default(cuid())
+  vehicleRequestId   String
+  step               Int      // 1=OpsMgr, 2=ChiefAcct, 3=GM
+  action             String   // SUBMITTED, APPROVED, REJECTED, INFO_REQUESTED
+  comment            String?
+  signature          String?  // Base64 signature
+  performedById      String
+  createdAt          DateTime @default(now())
+
+  vehicleRequest     VehicleRequest @relation(fields: [vehicleRequestId], references: [id], onDelete: Cascade)
+  performedBy        User           @relation(fields: [performedById], references: [id])
 }
 
 // ============================================

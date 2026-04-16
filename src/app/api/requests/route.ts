@@ -17,44 +17,46 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const search = url.searchParams.get('search');
 
-    const where: any = {};
+    // Build base conditions
+    const conditions: any[] = [];
 
     // Data isolation by company
     if (user.role !== 'SUPER_ADMIN') {
-      where.companyId = user.companyId;
+      conditions.push({ companyId: user.companyId });
     }
 
     // Role-based filtering
     if (user.role === 'EMPLOYEE') {
-      where.requestedById = user.id;
+      conditions.push({ requestedById: user.id });
     } else if (['OPS_MANAGER', 'CHIEF_ACCOUNTANT', 'GENERAL_MANAGER', 'CASHIER'].includes(user.role)) {
-      // Can see own submitted requests + requests assigned to them
-      where.OR = [
-        { requestedById: user.id },
-        { assignedOpsManagerId: user.id },
-        { assignedChiefAccountantId: user.id },
-        { assignedGeneralManagerId: user.id },
-        { assignedCashierId: user.id },
-      ];
+      conditions.push({
+        OR: [
+          { requestedById: user.id },
+          { assignedOpsManagerId: user.id },
+          { assignedChiefAccountantId: user.id },
+          { assignedGeneralManagerId: user.id },
+          { assignedCashierId: user.id },
+        ],
+      });
     }
 
+    // Status filter
     if (status) {
-      // Clear OR for status filtering - merge conditions
-      const roleCondition = where.OR;
-      delete where.OR;
-      where.status = status;
-      if (roleCondition && user.role === 'EMPLOYEE') {
-        where.requestedById = user.id;
-      }
+      conditions.push({ status });
     }
 
+    // Search filter
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { requestNumber: { contains: search } },
-        { description: { contains: search } },
-      ];
+      conditions.push({
+        OR: [
+          { title: { contains: search } },
+          { requestNumber: { contains: search } },
+          { description: { contains: search } },
+        ],
+      });
     }
+
+    const where = conditions.length > 0 ? { AND: conditions } : {};
 
     const [requests, total] = await Promise.all([
       db.expenseRequest.findMany({

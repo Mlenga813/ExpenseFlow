@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,7 +13,7 @@ export async function GET() {
 
     const where = role === 'SUPER_ADMIN' ? {} : { companyId };
 
-    const { searchParams } = new URL(typeof window !== 'undefined' ? window.location.href : 'http://localhost:3000/api/reports');
+    const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const departmentId = searchParams.get('departmentId');

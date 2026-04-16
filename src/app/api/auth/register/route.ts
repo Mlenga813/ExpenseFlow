@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role: 'EMPLOYEE',
+        role: mode === 'create' ? 'ADMIN' : 'EMPLOYEE',
         companyId,
       },
       include: { company: true },

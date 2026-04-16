@@ -7,7 +7,7 @@ import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ROLES, CATEGORIES, URGENCY_LEVELS, PAYMENT_METHODS, REQUEST_STATUSES, WORKFLOW_STEPS, ROLE_LABELS } from '@/lib/constants';
-import { canApproveAtStep, canDisburse, canManageUsers, canManageCompanies, canViewAllRequests } from '@/lib/permissions';
+import { canApproveAtStep, canDisburse } from '@/lib/permissions';
 import type { Role } from '@/lib/constants';
 
 // shadcn/ui imports
@@ -32,16 +32,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Lucide icons
 import {
-  LayoutDashboard, FileText, Plus, Bell, User, Settings, LogOut, Menu, Building2,
+  LayoutDashboard, FileText, Plus, Bell, User, LogOut, Menu, Building2,
   Users, FolderOpen, CheckCircle, XCircle, AlertCircle, DollarSign, Clock,
-  ArrowRight, Upload, Download, Eye, ChevronRight, Search, Filter, RefreshCw,
-  TrendingUp, BarChart3, PieChart, FileSpreadsheet, Send, PenTool, Ban,
-  Info, CircleDollarSign, Shield, Home, ClipboardList, CreditCard, X, Image,
-  ChevronLeft, Mail
+  Upload, Download, Eye, ChevronRight, Search, RefreshCw,
+  BarChart3, Send, PenTool,
+  Info, CircleDollarSign, CreditCard, X,
+  ChevronLeft
 } from 'lucide-react';
 
 // Recharts
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer, PieChart as RPieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer, PieChart as RPieChart, Pie, Cell } from 'recharts';
 
 const CHART_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -844,7 +844,7 @@ function NewRequestPage() {
       if (files.length > 0) {
         const formData = new FormData();
         files.forEach(f => formData.append('files', f));
-        await fetch(`/api/requests/upload?id=${request.id}`, { method: 'POST', body: formData });
+        await fetch(`/api/requests/${request.id}/upload`, { method: 'POST', body: formData });
       }
 
       toast.success('Fund requisition submitted successfully');
