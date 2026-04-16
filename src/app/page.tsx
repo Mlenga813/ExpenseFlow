@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ROLES, CATEGORIES, URGENCY_LEVELS, PAYMENT_METHODS, REQUEST_STATUSES, WORKFLOW_STEPS, ROLE_LABELS } from '@/lib/constants';
+import { ROLES, CATEGORIES, URGENCY_LEVELS, PAYMENT_METHODS, REQUEST_STATUSES, WORKFLOW_STEPS, ROLE_LABELS, VEHICLE_STATUSES, VEHICLE_WORKFLOW_STEPS, VEHICLE_CONDITIONS, CURRENCY } from '@/lib/constants';
 import { canApproveAtStep, canDisburse } from '@/lib/permissions';
 import type { Role } from '@/lib/constants';
 
@@ -37,7 +37,7 @@ import {
   Upload, Download, Eye, ChevronRight, Search, RefreshCw,
   BarChart3, Send, PenTool,
   Info, CircleDollarSign, CreditCard, X,
-  ChevronLeft
+  ChevronLeft, Car
 } from 'lucide-react';
 
 // Recharts
@@ -46,8 +46,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Respon
 const CHART_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 // ==================== UTILITY FUNCTIONS ====================
-function formatCurrency(amount: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-TZ', { style: 'currency', currency: CURRENCY }).format(amount);
 }
 
 function formatDate(date: string | Date) {
