@@ -145,6 +145,9 @@ export default function HomePage() {
             {currentPage === 'requests' && <RequestsListPage />}
             {currentPage === 'requests-new' && <NewRequestPage />}
             {currentPage === 'request-detail' && <RequestDetailPage />}
+            {currentPage === 'vehicle-requests' && <VehicleRequestsListPage />}
+            {currentPage === 'vehicle-new' && <NewVehicleRequestPage />}
+            {currentPage === 'vehicle-detail' && <VehicleDetailPage />}
             {currentPage === 'approvals' && <ApprovalsPage />}
             {currentPage === 'reports' && <ReportsPage />}
             {currentPage === 'admin-users' && <AdminUsersPage />}
@@ -169,8 +172,8 @@ function LoadingScreen() {
         <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
           <CircleDollarSign className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">ExpenseFlow</h2>
-        <p className="text-gray-500 mt-1">Loading...</p>
+        <h2 className="text-xl font-semibold text-gray-900">ACU ExpenseFlow</h2>
+        <p className="text-gray-500 mt-1">Arusha Cooperative Union</p>
       </div>
     </div>
   );
@@ -221,8 +224,8 @@ function LoginPage({ onSwitch, onLogin }: { onSwitch: () => void; onLogin: (user
           <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
             <CircleDollarSign className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">ExpenseFlow</h1>
-          <p className="text-gray-500 mt-1">Expense Request & Claims Management</p>
+          <h1 className="text-2xl font-bold text-gray-900">ACU ExpenseFlow</h1>
+          <p className="text-gray-500 mt-1">Arusha Cooperative Union - Expense Management</p>
         </div>
 
         <Card className="shadow-lg border-0">
@@ -407,8 +410,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
-    { key: 'requests', label: 'My Requests', icon: FileText, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
-    { key: 'requests-new', label: 'New Request', icon: Plus, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
+    { key: 'requests', label: 'Fund Requests', icon: FileText, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
+    { key: 'requests-new', label: 'New Fund Request', icon: Plus, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
+    { key: 'vehicle-requests', label: 'Vehicle Requests', icon: Car, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
+    { key: 'vehicle-new', label: 'New Vehicle Req', icon: Plus, roles: [ROLES.EMPLOYEE, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
     { key: 'approvals', label: 'Approvals', icon: CheckCircle, roles: [ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER, ROLES.CASHIER, ROLES.ADMIN, ROLES.SUPER_ADMIN] },
     { key: 'reports', label: 'Reports', icon: BarChart3, roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.OPS_MANAGER, ROLES.CHIEF_ACCOUNTANT, ROLES.GENERAL_MANAGER] },
     { key: 'admin-users', label: 'Users', icon: Users, roles: [ROLES.ADMIN, ROLES.SUPER_ADMIN] },
@@ -426,7 +431,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <CircleDollarSign className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-gray-900">ExpenseFlow</h2>
+            <h2 className="font-bold text-gray-900">ACU ExpenseFlow</h2>
             <p className="text-xs text-gray-500 truncate max-w-[160px]">{user?.companyName}</p>
           </div>
         </div>
@@ -439,7 +444,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               key={item.key}
               onClick={() => { navigate(item.key); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                currentPage === item.key || (item.key === 'requests' && currentPage === 'request-detail')
+                currentPage === item.key || (item.key === 'requests' && currentPage === 'request-detail') || (item.key === 'vehicle-requests' && currentPage === 'vehicle-detail')
                   ? 'bg-emerald-50 text-emerald-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
@@ -1337,16 +1342,21 @@ function ApprovalsPage() {
   const { navigate } = useAppStore();
   const { user } = useAuthStore();
   const role = user?.role as Role;
-  const [requests, setRequests] = useState<any[]>([]);
+  const [expenseRequests, setExpenseRequests] = useState<any[]>([]);
+  const [vehicleRequests, setVehicleRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('expense');
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        // Get all requests and filter client-side for pending
-        const data = await apiFetch('/api/requests?limit=100');
-        const pending = (data.requests || []).filter((r: any) => {
+        const [expenseData, vehicleData] = await Promise.all([
+          apiFetch('/api/requests?limit=100'),
+          apiFetch('/api/vehicle-requests?limit=100'),
+        ]);
+
+        const isPendingExpense = (r: any) => {
           if (role === ROLES.OPS_MANAGER) return r.status === 'PENDING_OPS_MANAGER';
           if (role === ROLES.CHIEF_ACCOUNTANT) return r.status === 'PENDING_CHIEF_ACCOUNTANT';
           if (role === ROLES.GENERAL_MANAGER) return r.status === 'PENDING_GENERAL_MANAGER';
@@ -1355,50 +1365,117 @@ function ApprovalsPage() {
             return ['PENDING_OPS_MANAGER', 'PENDING_CHIEF_ACCOUNTANT', 'PENDING_GENERAL_MANAGER', 'PENDING_DISBURSEMENT'].includes(r.status);
           }
           return false;
-        });
-        setRequests(pending);
+        };
+
+        const isPendingVehicle = (r: any) => {
+          if (role === ROLES.OPS_MANAGER) return r.status === 'PENDING_OPS_MANAGER';
+          if (role === ROLES.CHIEF_ACCOUNTANT) return r.status === 'PENDING_CHIEF_ACCOUNTANT';
+          if (role === ROLES.GENERAL_MANAGER) return r.status === 'PENDING_GENERAL_MANAGER';
+          if ([ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(role)) {
+            return ['PENDING_OPS_MANAGER', 'PENDING_CHIEF_ACCOUNTANT', 'PENDING_GENERAL_MANAGER'].includes(r.status);
+          }
+          return false;
+        };
+
+        setExpenseRequests((expenseData.requests || []).filter(isPendingExpense));
+        setVehicleRequests((vehicleData.requests || []).filter(isPendingVehicle));
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
     load();
   }, [role]);
 
+  function getVehicleStatusBadge(status: string) {
+    const s = VEHICLE_STATUSES[status as keyof typeof VEHICLE_STATUSES];
+    if (!s) return <Badge variant="outline">{status}</Badge>;
+    return <Badge className={`${s.color} border-0 font-medium`}>{s.label}</Badge>;
+  }
+
+  const totalPending = expenseRequests.length + vehicleRequests.length;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Approvals Queue</h1>
-        <p className="text-gray-500">Requests pending your review</p>
+        <p className="text-gray-500">Requests pending your review ({totalPending} total)</p>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
-      ) : requests.length > 0 ? (
-        <div className="space-y-3">
-          {requests.map(req => (
-            <Card key={req.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('request-detail', req.id)}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs text-gray-500">{req.requestNumber}</span>
-                      {getStatusBadge(req.status)}
-                      {getUrgencyBadge(req.urgency)}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="expense" className="gap-2">
+            <FileText className="w-4 h-4" />
+            Fund Requests ({expenseRequests.length})
+          </TabsTrigger>
+          <TabsTrigger value="vehicle" className="gap-2">
+            <Car className="w-4 h-4" />
+            Vehicle Requests ({vehicleRequests.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="expense">
+          {loading ? (
+            <div className="space-y-3 mt-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+          ) : expenseRequests.length > 0 ? (
+            <div className="space-y-3 mt-4">
+              {expenseRequests.map(req => (
+                <Card key={req.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('request-detail', req.id)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-xs text-gray-500">{req.requestNumber}</span>
+                          {getStatusBadge(req.status)}
+                          {getUrgencyBadge(req.urgency)}
+                        </div>
+                        <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
+                        <p className="text-sm text-gray-500">By {req.requestedBy?.name} | {formatDate(req.createdAt)}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="text-lg font-bold text-gray-900">{formatCurrency(req.amount)}</p>
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700"><Eye className="w-4 h-4 mr-1" /> Review</Button>
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
-                    <p className="text-sm text-gray-500">By {req.requestedBy?.name} | {formatDate(req.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <p className="text-lg font-bold text-gray-900">{formatCurrency(req.amount)}</p>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700"><Eye className="w-4 h-4 mr-1" /> Review</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card><CardContent className="p-12 text-center"><CheckCircle className="w-12 h-12 text-emerald-300 mx-auto mb-3" /><p className="text-gray-500">No pending approvals. All caught up!</p></CardContent></Card>
-      )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="mt-4"><CardContent className="p-12 text-center"><CheckCircle className="w-12 h-12 text-emerald-300 mx-auto mb-3" /><p className="text-gray-500">No pending fund request approvals</p></CardContent></Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="vehicle">
+          {loading ? (
+            <div className="space-y-3 mt-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+          ) : vehicleRequests.length > 0 ? (
+            <div className="space-y-3 mt-4">
+              {vehicleRequests.map(req => (
+                <Card key={req.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('vehicle-detail', req.id)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-xs text-gray-500">{req.requestNumber}</span>
+                          {getVehicleStatusBadge(req.status)}
+                          <Badge variant="outline" className="text-xs gap-1"><Car className="w-3 h-3" />{req.plateNumber}</Badge>
+                        </div>
+                        <h3 className="font-semibold text-gray-900 truncate">{req.destination}</h3>
+                        <p className="text-sm text-gray-500">{req.reason} | By {req.requestedBy?.name}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="text-sm text-gray-500">{formatDateTime(req.departureTime)}</p>
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700"><Eye className="w-4 h-4 mr-1" /> Review</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="mt-4"><CardContent className="p-12 text-center"><Car className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">No pending vehicle request approvals</p></CardContent></Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -1870,6 +1947,577 @@ function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ==================== VEHICLE REQUESTS LIST PAGE ====================
+function VehicleRequestsListPage() {
+  const { navigate } = useAppStore();
+  const { user } = useAuthStore();
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (search) params.set('search', search);
+        const data = await apiFetch(`/api/vehicle-requests?${params.toString()}`);
+        setRequests(data.requests || []);
+      } catch (err) { console.error(err); }
+      finally { setLoading(false); }
+    };
+    load();
+  }, [statusFilter, search]);
+
+  function getVehicleStatusBadge(status: string) {
+    const s = VEHICLE_STATUSES[status as keyof typeof VEHICLE_STATUSES];
+    if (!s) return <Badge variant="outline">{status}</Badge>;
+    return <Badge className={`${s.color} border-0 font-medium`}>{s.label}</Badge>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Vehicle Requests</h1>
+          <p className="text-gray-500">Kibali cha Gari - Vehicle permission requests</p>
+        </div>
+        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => navigate('vehicle-new')}>
+          <Car className="w-4 h-4 mr-2" /> New Vehicle Request
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input placeholder="Search by plate, destination..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Filter by status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {Object.entries(VEHICLE_STATUSES).map(([key, val]) => (
+              <SelectItem key={key} value={key}>{val.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+      ) : requests.length > 0 ? (
+        <div className="space-y-3">
+          {requests.map(req => (
+            <Card key={req.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('vehicle-detail', req.id)}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs text-gray-500">{req.requestNumber}</span>
+                      {getVehicleStatusBadge(req.status)}
+                      <Badge variant="outline" className="text-xs">{req.plateNumber}</Badge>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{req.destination}</h3>
+                    <p className="text-sm text-gray-500 truncate">{req.reason}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900">{req.requesterName}</p>
+                    <p className="text-xs text-gray-500">{formatDate(req.departureTime)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card><CardContent className="p-12 text-center"><Car className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">No vehicle requests found</p></CardContent></Card>
+      )}
+    </div>
+  );
+}
+
+// ==================== NEW VEHICLE REQUEST PAGE ====================
+function NewVehicleRequestPage() {
+  const { navigate } = useAppStore();
+  const { user } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [departments, setDepartments] = useState<any[]>([]);
+
+  const [form, setForm] = useState({
+    plateNumber: '', reason: '', departureTime: '', destination: '',
+    boardMemberName: '', conditionBefore: 'NZURI', departmentId: '',
+  });
+
+  useEffect(() => {
+    apiFetch('/api/departments').then(setDepartments).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const request = await apiFetch('/api/vehicle-requests', {
+        method: 'POST',
+        body: JSON.stringify(form),
+      });
+      toast.success('Vehicle request submitted successfully');
+      navigate('vehicle-detail', request.id);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateForm = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate('vehicle-requests')}><ChevronLeft className="w-5 h-5" /></Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Kibali cha Gari</h1>
+          <p className="text-gray-500">Vehicle Request for Office Use</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>}
+
+            {/* (A) Applicant Info */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><User className="w-4 h-4" /> (A) Taarifa za Mwombaji / Applicant Info</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Department / Idara</Label>
+                  <Select value={form.departmentId} onValueChange={v => updateForm('departmentId', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                    <SelectContent>
+                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Position / Cheo</Label>
+                  <Input value={user?.role || ''} disabled className="bg-gray-100" />
+                </div>
+              </div>
+            </div>
+
+            {/* (B) Trip Details */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-700 mb-3 flex items-center gap-2"><Car className="w-4 h-4" /> (B) Maelezo ya Safari / Trip Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Plate Number / Namba ya Gari *</Label>
+                  <Input placeholder="e.g. T 123 ABC" value={form.plateNumber} onChange={e => updateForm('plateNumber', e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Departure Time / Muda wa Kuondoka *</Label>
+                  <Input type="datetime-local" value={form.departureTime} onChange={e => updateForm('departureTime', e.target.value)} required />
+                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <Label>Destination / Mahali Gari Linaenda *</Label>
+                  <Input placeholder="e.g. Arusha CBD" value={form.destination} onChange={e => updateForm('destination', e.target.value)} required />
+                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <Label>Reason for Use / Sababu ya Matumizi *</Label>
+                  <Textarea placeholder="Explain why the vehicle is needed..." rows={3} value={form.reason} onChange={e => updateForm('reason', e.target.value)} required />
+                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <Label>Board Member / Head of Dept (Mjumbe wa Bod / Mkuu wa Idara)</Label>
+                  <Input placeholder="Name of accompanying board member or HOD" value={form.boardMemberName} onChange={e => updateForm('boardMemberName', e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* (C) Vehicle Condition Before */}
+            <div className="bg-amber-50 rounded-lg p-4">
+              <h3 className="font-semibold text-amber-700 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> (C) Hali ya Gari Kabla / Vehicle Condition Before</h3>
+              <div className="space-y-2">
+                <Label>Condition / Hali</Label>
+                <Select value={form.conditionBefore} onValueChange={v => updateForm('conditionBefore', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
+                {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                Submit Vehicle Request
+              </Button>
+              <Button type="button" variant="outline" onClick={() => navigate('vehicle-requests')}>Cancel</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ==================== VEHICLE DETAIL PAGE ====================
+function VehicleDetailPage() {
+  const { currentRequestId, navigate } = useAppStore();
+  const { user } = useAuthStore();
+  const [request, setRequest] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [comment, setComment] = useState('');
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const [returnCondition, setReturnCondition] = useState('NZURI');
+  const [returnTime, setReturnTime] = useState('');
+  const sigCanvasRef = React.useRef<HTMLCanvasElement>(null);
+  const role = user?.role as Role;
+
+  const loadRequest = useCallback(async () => {
+    if (!currentRequestId) return;
+    setLoading(true);
+    try {
+      const data = await apiFetch(`/api/vehicle-requests/${currentRequestId}`);
+      setRequest(data);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, [currentRequestId]);
+
+  useEffect(() => { loadRequest(); }, [loadRequest]);
+
+  // Signature pad handlers
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = sigCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d')!;
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    setDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!drawing) return;
+    const canvas = sigCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d')!;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setDrawing(false);
+    const canvas = sigCanvasRef.current;
+    if (canvas) setSignatureData(canvas.toDataURL());
+  };
+
+  const clearSignature = () => {
+    const canvas = sigCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d')!;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setSignatureData(null);
+    }
+  };
+
+  const handleApproval = async (action: 'APPROVE' | 'REJECT' | 'INFO_REQUESTED') => {
+    if (!currentRequestId) return;
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/vehicle-requests/${currentRequestId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ action, comment, signature: signatureData }),
+      });
+      setComment('');
+      setSignatureData(null);
+      toast.success(action === 'APPROVE' ? 'Vehicle request approved' : action === 'REJECT' ? 'Vehicle request rejected' : 'Info requested');
+      loadRequest();
+    } catch (err: any) {
+      toast.error(err.message || 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReturn = async () => {
+    if (!currentRequestId) return;
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/vehicle-requests/${currentRequestId}/return`, {
+        method: 'POST',
+        body: JSON.stringify({ returnTime: returnTime || new Date().toISOString(), returnDate: new Date().toISOString(), conditionAfter: returnCondition }),
+      });
+      toast.success('Vehicle return recorded successfully');
+      loadRequest();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to record return');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div>;
+  if (!request) return <Card><CardContent className="p-12 text-center"><p className="text-gray-500">Request not found</p></CardContent></Card>;
+
+  function getVehicleStatusBadge(status: string) {
+    const s = VEHICLE_STATUSES[status as keyof typeof VEHICLE_STATUSES];
+    if (!s) return <Badge variant="outline">{status}</Badge>;
+    return <Badge className={`${s.color} border-0 font-medium`}>{s.label}</Badge>;
+  }
+
+  const canApprove = canApproveAtStep(role, request.currentStep) && ['PENDING_OPS_MANAGER', 'PENDING_CHIEF_ACCOUNTANT', 'PENDING_GENERAL_MANAGER'].includes(request.status);
+  const isRequestor = user?.id === request.requestedById;
+  const canReturn = (isRequestor || ['ADMIN', 'SUPER_ADMIN'].includes(role)) && request.status === 'APPROVED';
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate('vehicle-requests')}><ChevronLeft className="w-5 h-5" /></Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{request.requestNumber}</h1>
+            {getVehicleStatusBadge(request.status)}
+            <Badge variant="outline" className="gap-1"><Car className="w-3 h-3" />{request.plateNumber}</Badge>
+          </div>
+          <p className="text-gray-500">Kibali cha Gari - Vehicle Permission Request</p>
+        </div>
+      </div>
+
+      {/* (A) Applicant Info */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">(A) Taarifa za Mwombaji / Applicant Info</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div><p className="text-gray-500">Name / Jina</p><p className="font-medium">{request.requesterName}</p></div>
+            <div><p className="text-gray-500">Department / Idara</p><p className="font-medium">{request.department}</p></div>
+            <div><p className="text-gray-500">Position / Cheo</p><p className="font-medium">{ROLE_LABELS[request.position as Role] || request.position}</p></div>
+            <div><p className="text-gray-500">Request Date / Tarehe</p><p className="font-medium">{formatDate(request.requestDate)}</p></div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* (B) Trip Details */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">(B) Maelezo ya Safari / Trip Details</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div><p className="text-gray-500">Plate Number / Namba ya Gari</p><p className="font-semibold text-lg">{request.plateNumber}</p></div>
+            <div><p className="text-gray-500">Departure / Kuondoka</p><p className="font-medium">{formatDateTime(request.departureTime)}</p></div>
+            <div><p className="text-gray-500">Destination / Mahali</p><p className="font-medium">{request.destination}</p></div>
+            <div className="col-span-full"><p className="text-gray-500">Reason / Sababu</p><p className="font-medium mt-1">{request.reason}</p></div>
+            {request.boardMemberName && <div><p className="text-gray-500">Board Member / HOD</p><p className="font-medium">{request.boardMemberName}</p></div>}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* (C) Vehicle Condition Before */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">(C) Hali ya Gari Kabla / Vehicle Condition Before</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Badge className={request.conditionBefore === 'NZURI' ? 'bg-emerald-100 text-emerald-700 border-0' : 'bg-red-100 text-red-700 border-0'}>
+              {request.conditionBefore === 'NZURI' ? 'Nzuri (Good)' : 'Mbaya (Bad)'}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Approval Workflow Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Approval Workflow / Mchakato wa Idhini</CardTitle>
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Progress</span>
+              <span className="text-xs font-medium text-emerald-600">
+                {['APPROVED', 'RETURNED'].includes(request.status) ? 'Complete' : request.status === 'REJECTED' ? 'Rejected' : `Step ${request.currentStep} of 3`}
+              </span>
+            </div>
+            <Progress value={
+              ['APPROVED', 'RETURNED'].includes(request.status) ? 100 :
+              request.status === 'REJECTED' ? 0 :
+              ((request.currentStep - 1) / 3) * 100
+            } className="h-2" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Submission entry */}
+            <div className="flex gap-4 pb-4 border-b">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-blue-100 text-blue-700"><Send className="w-4 h-4" /></div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-blue-700">Request Submitted</p>
+                  <span className="text-xs text-gray-500">{formatDate(request.createdAt)}</span>
+                </div>
+                <p className="text-sm text-gray-500">{request.requesterName}</p>
+              </div>
+            </div>
+            {VEHICLE_WORKFLOW_STEPS.map((step, idx) => {
+              const isCompleted = request.currentStep > step.step || ['APPROVED', 'RETURNED'].includes(request.status);
+              const isCurrent = request.currentStep === step.step && !['APPROVED', 'RETURNED', 'REJECTED'].includes(request.status);
+              const reviewer = step.step === 1 ? request.opsManager : step.step === 2 ? request.chiefAccountant : request.generalManager;
+              const approvedAt = step.step === 1 ? request.opsManagerApprovedAt : step.step === 2 ? request.chiefAccountantApprovedAt : request.generalManagerApprovedAt;
+              const stepLog = request.approvalLogs?.find((l: any) => l.step === step.step && l.action === 'APPROVED');
+              const rejectLog = request.approvalLogs?.find((l: any) => l.step === step.step && l.action === 'REJECTED');
+
+              return (
+                <div key={step.step} className={`flex gap-4 ${idx < VEHICLE_WORKFLOW_STEPS.length - 1 ? 'pb-4 border-b' : ''}`}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      isCompleted ? 'bg-emerald-100 text-emerald-700' : isCurrent ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {isCompleted ? <CheckCircle className="w-4 h-4" /> : step.step}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className={`font-medium ${isCurrent ? 'text-amber-700' : isCompleted ? 'text-emerald-700' : 'text-gray-400'}`}>{step.label}</p>
+                      {approvedAt && <span className="text-xs text-gray-500">{formatDateTime(approvedAt)}</span>}
+                    </div>
+                    {reviewer && <p className="text-sm text-gray-500">{reviewer.name}</p>}
+                    {stepLog?.comment && <p className="text-sm text-gray-600 mt-1 bg-gray-50 rounded p-2">{stepLog.comment}</p>}
+                    {stepLog?.signature && <div className="mt-1"><img src={stepLog.signature} alt="Signature" className="h-10 border rounded" /></div>}
+                    {rejectLog && <p className="text-sm text-red-600 mt-1 bg-red-50 rounded p-2">Rejected: {rejectLog.comment}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* (E) Return Details */}
+      {(request.status === 'RETURNED' || canReturn) && (
+        <Card className="border-blue-200 bg-blue-50/30">
+          <CardHeader><CardTitle className="text-base">(E) Maelezo ya Kurudi / Return Details</CardTitle></CardHeader>
+          <CardContent>
+            {request.status === 'RETURNED' ? (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><p className="text-gray-500">Return Time / Muda wa Kurudi</p><p className="font-medium">{request.returnTime ? formatDateTime(request.returnTime) : 'N/A'}</p></div>
+                <div><p className="text-gray-500">Return Date / Tarehe</p><p className="font-medium">{request.returnDate ? formatDate(request.returnDate) : 'N/A'}</p></div>
+                <div><p className="text-gray-500">Condition After / Hali Baada</p>
+                  <Badge className={request.conditionAfter === 'NZURI' ? 'bg-emerald-100 text-emerald-700 border-0' : 'bg-red-100 text-red-700 border-0'}>
+                    {request.conditionAfter === 'NZURI' ? 'Nzuri (Good)' : request.conditionAfter === 'MBAYA' ? 'Mbaya (Bad)' : 'N/A'}
+                  </Badge>
+                </div>
+              </div>
+            ) : canReturn ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Return Time / Muda wa Kurudi</Label>
+                    <Input type="datetime-local" value={returnTime} onChange={e => setReturnTime(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Condition After / Hali Baada</Label>
+                    <Select value={returnCondition} onValueChange={setReturnCondition}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {VEHICLE_CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button className="bg-blue-600 hover:bg-blue-700" disabled={actionLoading} onClick={handleReturn}>
+                  <CheckCircle className="w-4 h-4 mr-2" /> Record Vehicle Return
+                </Button>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Approval Panel */}
+      {canApprove && (
+        <Card className="border-amber-200 bg-amber-50/30">
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><PenTool className="w-4 h-4" /> Your Review Required / Idhini Yako Inahitajika</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Comment / Maoni</Label>
+              <Textarea placeholder="Add your comment..." value={comment} onChange={e => setComment(e.target.value)} rows={3} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Digital Signature / Sahihi</Label>
+                <Button variant="ghost" size="sm" onClick={clearSignature}>Clear</Button>
+              </div>
+              <canvas
+                ref={sigCanvasRef}
+                width={400}
+                height={120}
+                className="border border-gray-300 rounded-lg bg-white cursor-crosshair w-full"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+              />
+              <p className="text-xs text-gray-400">Draw your signature above / Chora sahihi yako hapo juu</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button className="bg-emerald-600 hover:bg-emerald-700" disabled={actionLoading} onClick={() => handleApproval('APPROVE')}>
+                <CheckCircle className="w-4 h-4 mr-2" /> Approve / Kubali
+              </Button>
+              <Button variant="destructive" disabled={actionLoading} onClick={() => handleApproval('REJECT')}>
+                <XCircle className="w-4 h-4 mr-2" /> Reject / Kataa
+              </Button>
+              <Button variant="outline" className="border-amber-300 text-amber-700" disabled={actionLoading} onClick={() => handleApproval('INFO_REQUESTED')}>
+                <Info className="w-4 h-4 mr-2" /> Request Info
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Approval Log */}
+      {request.approvalLogs?.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Activity Log / Taarifa za Shughuli</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {request.approvalLogs.map((log: any, idx: number) => (
+                <div key={idx} className="flex items-start gap-3 text-sm">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    log.action === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' :
+                    log.action === 'REJECTED' ? 'bg-red-100 text-red-600' :
+                    log.action === 'SUBMITTED' ? 'bg-blue-100 text-blue-600' :
+                    log.action === 'RETURNED' ? 'bg-cyan-100 text-cyan-600' :
+                    'bg-amber-100 text-amber-600'
+                  }`}>
+                    {log.action === 'APPROVED' ? <CheckCircle className="w-3 h-3" /> :
+                     log.action === 'REJECTED' ? <XCircle className="w-3 h-3" /> :
+                     log.action === 'SUBMITTED' ? <Send className="w-3 h-3" /> :
+                     log.action === 'RETURNED' ? <Car className="w-3 h-3" /> :
+                     <Info className="w-3 h-3" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{log.performedBy?.name} - {log.action}</p>
+                    {log.comment && <p className="text-gray-500">{log.comment}</p>}
+                    <p className="text-xs text-gray-400">{formatDateTime(log.createdAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
